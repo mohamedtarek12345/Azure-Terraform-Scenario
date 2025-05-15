@@ -1,0 +1,9 @@
+#cloud-config
+package_update: true
+packages:
+  - cifs-utils
+
+runcmd:
+  - mkdir -p /mnt/azfileshare
+  - echo "//${storage_account_name}.file.core.windows.net/${fileshare_name} /mnt/azfileshare cifs vers=3.0,username=${storage_account_name},password=${storage_account_key},dir_mode=0777,file_mode=0777,serverino" >> /etc/fstab
+  - mount -a
