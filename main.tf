@@ -55,7 +55,7 @@ module "vms" {
     "win-vm-1" = {
       subnet_key          = "PLB_sub"
       os_type             = "Windows"
-      availability_zone   = 0
+      availability_zone   = 2
       create_public_ip    = true
       backend_pool_id     = [module.load_balancers["windows-public-lb"].backend_pool_id]
       custom_message      = "Hello Website 1"
@@ -71,7 +71,7 @@ module "vms" {
     "linux-vm-1" = {
       subnet_key         = "ILB_sub"
       os_type            = "Linux"
-      availability_zone  = 0
+      availability_zone  = 2
       create_public_ip   = false
       backend_pool_id = [module.load_balancers["linux-private-lb"].backend_pool_id]
       custom_message2    = "Hello from Apache"
@@ -90,7 +90,7 @@ module "vms" {
   location              = var.location
   resource_group_name   = module.rg.name
   subnet_id             = module.subnet[each.value.subnet_key].subnet_id
-  vm_size               = "Standard_DS2_v2"
+  vm_size               = "Standard_D2as_v5"
   admin_username        = var.admin_username
   admin_password        = var.admin_password
   os_type               = each.value.os_type
@@ -162,41 +162,10 @@ module "private_endpoint" {
 
 module "sql_database" {
   source              = "./modules/sql_database"
-  name_prefix         = "myapp"
+  name_prefix         = "myapp-sqlserver"
   location            = var.location
   resource_group_name = module.rg.name
   admin_username      = var.admin_username
   admin_password      = var.admin_password
 }
 
-
-
-/*
-module "windows_vm" {
-  source              = "./modules/vm"
-}
-
-module "linux_vm" {
-  source              = "./modules/vm"
-}
-
-module "windows_lb" {
-  source              = "./modules/lb"
-}
-
-module "linux_lb" {
-  source              = "./modules/lb"
-}
-
-module "sql_db" {
-  source              = "./modules/sql"
-}
-
-module "dns_vnet_link" {
-  source              = "./modules/dns"
-}
-
-module "storage_account" {
-  source              = "./modules/storage"
-}
-*/
