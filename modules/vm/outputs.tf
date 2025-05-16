@@ -9,3 +9,7 @@ output "nic_id" {
 output "public_ip" {
   value = length(azurerm_public_ip.pip) > 0 ? azurerm_public_ip.pip[0].ip_address : null
 }
+
+output "vm_ids" {
+  value = [for vm in azurerm_linux_virtual_machine.linux : vm.id]
+}

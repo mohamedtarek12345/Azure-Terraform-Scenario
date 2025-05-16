@@ -169,3 +169,14 @@ module "sql_database" {
   admin_password      = var.admin_password
 }
 
+module "fileshare_mount" {
+  source                = "./modules/fileshare_mount"
+  vm_id                 = module.vms["linux-vm-1"]["linux-vm-2"].vm_ids
+  script_url            = "https://raw.githubusercontent.com/mohamedtarek12345/Azure-Terraform-Scenario/main/modules/fileshar_mount/scripts/install-fileshare.sh"
+  storage_account_name  = module.storage.storage_account_name
+  storage_account_key   = module.storage.primary_access_key
+  name                  = "appfiles"
+  os_type               = "linux"
+}
+
+
