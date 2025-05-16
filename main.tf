@@ -72,17 +72,17 @@ module "vms" {
       subnet_key         = "ILB_sub"
       os_type            = "Linux"
       availability_zone  = 2
-      create_public_ip   = false
+      create_public_ip   = true
       backend_pool_id = [module.load_balancers["linux-private-lb"].backend_pool_id]
-      custom_message2    = "Hello from Apache"
+      custom_message2    = "Hello from Apache 1"
     }
     "linux-vm-2" = {
       subnet_key         = "ILB_sub"
       os_type            = "Linux"
       availability_zone  = 1
-      create_public_ip   = false
+      create_public_ip   = true
       backend_pool_id = [module.load_balancers["linux-private-lb"].backend_pool_id]
-      custom_message2    = "Hello from Apache"
+      custom_message2    = "Hello from Apache 2"
     }
   }
 
