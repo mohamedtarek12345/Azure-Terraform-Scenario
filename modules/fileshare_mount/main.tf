@@ -1,7 +1,7 @@
 resource "azurerm_virtual_machine_extension" "fileshare_mount" {
-  for_each = toset(var.vm_id)
-  name                 = "mountFileShare-${each.key}"
-  virtual_machine_id   = each.value
+  count                = length(var.vm_id)
+  name                 = "mountFileShare-${count.index}"
+  virtual_machine_id   = var.vm_id[count.index]
   publisher            = "Microsoft.Azure.Extensions"
   type                 = "CustomScript"
   type_handler_version = "2.1"

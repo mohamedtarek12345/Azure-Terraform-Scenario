@@ -17,7 +17,7 @@ module "vnet" {
   address_space       = each.value.address_space
   location            = each.value.location
   resource_group_name = each.value.resource_group_name
-
+  depends_on          = [module.rg]
 }
 
 module "subnet" {
@@ -167,11 +167,12 @@ module "sql_database" {
   resource_group_name = module.rg.name
   admin_username      = var.admin_username
   admin_password      = var.admin_password
+  depends_on          = [module.rg, module.vnet, module.subnet]
 }
 
 module "fileshare_mount" {
   source                = "./modules/fileshare_mount"
-  vm_id                 = module.vms.vm_ids
+  vm_id                 = flatten([for vm in module.vms : vm.vm_ids])
   script_url            = "https://raw.githubusercontent.com/mohamedtarek12345/Azure-Terraform-Scenario/main/modules/fileshar_mount/scripts/install-fileshare.sh"
   storage_account_name  = module.storage.storage_account_name
   storage_account_key   = module.storage.primary_access_key

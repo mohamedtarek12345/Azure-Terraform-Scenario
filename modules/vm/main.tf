@@ -106,27 +106,20 @@ resource "azurerm_virtual_machine_extension" "apache_install" {
   type_handler_version = "2.1"
 
   settings = jsonencode({
-    commandToExecute = "bash -c 'sudo apt update && sudo apt install -y apache2 && echo ${var.custom_message2} | sudo tee /var/www/html/index.html && sudo systemctl enable apache2 && sudo systemctl start apache2'"
-  })
-}
+    commandToExecute = <<-EOT
+      #!/bin/bash
+      # Install Apache
+      sudo apt update && sudo apt install -y apache2
+      echo ${var.custom_message2} | sudo tee /var/www/html/index.html
+      sudo systemctl enable apache2
+      sudo systemctl start apache2
 
-resource "azurerm_virtual_machine_extension" "mount_fileshare" {
-  count = var.os_type == "Linux" ? 1 : 0
-  name                 = "${var.name}-mount-share-${count.index}"
-  virtual_machine_id   = azurerm_linux_virtual_machine.linux[count.index].id
-  publisher            = "Microsoft.Azure.Extensions"
-  type                 = "CustomScript"
-  type_handler_version = "2.1"
-
-  settings = jsonencode({
-    "fileUris" = []
-    "commandToExecute" = <<-EOF
-      sudo apt-get update
+      # Mount file share
       sudo apt-get install -y cifs-utils
       sudo mkdir -p /mnt/fileshare
       sudo mount -t cifs //${var.storage_account_name}.file.core.windows.net/${var.fileshare_name} /mnt/fileshare -o vers=3.0,username=${var.storage_account_name},password=${var.storage_account_key},dir_mode=0777,file_mode=0777,serverino
       echo "//${var.storage_account_name}.file.core.windows.net/${var.fileshare_name} /mnt/fileshare cifs vers=3.0,username=${var.storage_account_name},password=${var.storage_account_key},dir_mode=0777,file_mode=0777,serverino 0 0" | sudo tee -a /etc/fstab
-    EOF
+    EOT
   })
 }
 
