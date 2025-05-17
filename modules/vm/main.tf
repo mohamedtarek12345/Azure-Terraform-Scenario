@@ -27,7 +27,7 @@ resource "azurerm_windows_virtual_machine" "win" {
   location            = var.location
   resource_group_name = var.resource_group_name
   size                = var.vm_size
-  zone   = var.availability_zone
+  zone                = var.availability_zone
   network_interface_ids = [azurerm_network_interface.nic.id]
   admin_username      = var.admin_username
   admin_password      = var.admin_password

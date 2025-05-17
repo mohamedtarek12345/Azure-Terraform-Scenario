@@ -1,6 +1,7 @@
 resource "azurerm_virtual_machine_extension" "fileshare_mount" {
-  name                 = var.name
-  virtual_machine_id   = var.vm_id
+  for_each = toset(var.vm_id)
+  name                 = "mountFileShare-${each.key}"
+  virtual_machine_id   = each.value
   publisher            = "Microsoft.Azure.Extensions"
   type                 = "CustomScript"
   type_handler_version = "2.1"
@@ -9,7 +10,7 @@ resource "azurerm_virtual_machine_extension" "fileshare_mount" {
   settings = <<SETTINGS
     {
       "fileUris": ["${var.script_url}"],
-      "commandToExecute": "bash install-fileshare.sh"
+      "commandToExecute": "bash install-fileshare.sh ${var.storage_account_name} ${var.storage_account_key} ${var.name}"
     }
   SETTINGS
 

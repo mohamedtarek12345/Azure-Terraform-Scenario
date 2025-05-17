@@ -4,7 +4,9 @@ variable "tenant_id" {}
 variable "subscription_id" {}
 
 variable "resource_group_name" {
-  default = "Terraform-RG"
+  description = "Resource group name"
+  type        = string
+  default     = "Terraform-RG"
 }
 
 variable "location" {

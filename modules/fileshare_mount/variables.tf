@@ -1,6 +1,6 @@
 variable "vm_id" {
   description = "The ID of the VM to attach the extension to."
-  type        = string
+  type        = list(string)
 }
 
 variable "script_url" {

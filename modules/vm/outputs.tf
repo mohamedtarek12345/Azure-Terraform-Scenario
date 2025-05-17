@@ -11,13 +11,13 @@ output "public_ip" {
 }
 
 output "vm_ids" {
-  value = [for vm in azurerm_linux_virtual_machine.linux : vm.id]
-}
-
-output "vm_id" {
-  value = azurerm_windows_virtual_machine.win.id
+  description = "All VM IDs"
+  value       = concat(
+    [for vm in azurerm_windows_virtual_machine.win : vm.id],
+    [for vm in azurerm_linux_virtual_machine.linux : vm.id]
+  )
 }
 
 output "storage_account_key" {
-  value = azurerm_storage_account.storage_account.primary_access_key
+  value = var.storage_account_key
 }
