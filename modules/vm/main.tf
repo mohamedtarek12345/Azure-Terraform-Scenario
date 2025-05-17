@@ -69,12 +69,6 @@ resource "azurerm_linux_virtual_machine" "linux" {
     sku       = "20_04-lts"
     version   = "latest"
   }
-
-    custom_data = base64encode(templatefile("${path.module}/cloud-init-mount.tftpl", {
-    storage_account_name = var.storage_account_name
-    storage_account_key  = var.storage_account_key
-    fileshare_name       = var.fileshare_name
-  }))
 }
 
 resource "azurerm_network_interface_backend_address_pool_association" "bepool" {
@@ -93,7 +87,22 @@ resource "azurerm_virtual_machine_extension" "iis_install" {
   type_handler_version = "1.10"
 
   settings = jsonencode({
-    "commandToExecute" = "powershell -ExecutionPolicy Unrestricted -Command \"Install-WindowsFeature -name Web-Server -IncludeManagementTools; Set-Content -Path C:\\inetpub\\wwwroot\\index.html -Value '${var.custom_message}'\""
+    "commandToExecute" = <<EOT
+      powershell -ExecutionPolicy Unrestricted -Command "
+      # Install IIS
+      Install-WindowsFeature -name Web-Server -IncludeManagementTools
+      Set-Content -Path C:\\inetpub\\wwwroot\\index.html -Value '${var.custom_message}'
+      
+      # Mount File Share
+      $connectTestResult = Test-NetConnection -ComputerName ${var.storage_account_name}.file.core.windows.net -Port 445
+      if ($connectTestResult.TcpTestSucceeded) {
+        cmd.exe /C 'cmdkey /add:${var.storage_account_name}.file.core.windows.net /user:localhost\\${var.storage_account_name} /pass:${var.storage_account_key}'
+        New-Item -Path 'Z:' -ItemType Directory -Force
+        net use Z: \\\\${var.storage_account_name}.file.core.windows.net\\${var.fileshare_name} /persistent:yes
+      } else {
+        Write-Error 'Unable to reach the Azure storage account via port 445. Check to make sure your organization or ISP is not blocking port 445, or use Azure P2S VPN, Azure S2S VPN, or Express Route to tunnel SMB traffic over a different port.'
+      }"
+    EOT
   })
 }
 
@@ -106,20 +115,45 @@ resource "azurerm_virtual_machine_extension" "apache_install" {
   type_handler_version = "2.1"
 
   settings = jsonencode({
-    commandToExecute = <<-EOT
-      #!/bin/bash
-      # Install Apache
-      sudo apt update && sudo apt install -y apache2
-      echo ${var.custom_message2} | sudo tee /var/www/html/index.html
-      sudo systemctl enable apache2
-      sudo systemctl start apache2
+    script = base64encode(<<-EOF
+#!/bin/bash
+set -e
 
-      # Mount file share
-      sudo apt-get install -y cifs-utils
-      sudo mkdir -p /mnt/fileshare
-      sudo mount -t cifs //${var.storage_account_name}.file.core.windows.net/${var.fileshare_name} /mnt/fileshare -o vers=3.0,username=${var.storage_account_name},password=${var.storage_account_key},dir_mode=0777,file_mode=0777,serverino
-      echo "//${var.storage_account_name}.file.core.windows.net/${var.fileshare_name} /mnt/fileshare cifs vers=3.0,username=${var.storage_account_name},password=${var.storage_account_key},dir_mode=0777,file_mode=0777,serverino 0 0" | sudo tee -a /etc/fstab
-    EOT
+# Update package lists
+sudo apt-get update
+
+# Install Apache
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apache2
+echo "${var.custom_message2}" | sudo tee /var/www/html/index.html
+sudo systemctl enable apache2
+sudo systemctl start apache2
+
+# Install CIFS utilities
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y cifs-utils
+
+# Create mount point
+sudo mkdir -p /mnt/fileshare
+
+# Mount file share
+sudo mount -t cifs "//${var.storage_account_name}.file.core.windows.net/${var.fileshare_name}" /mnt/fileshare -o "vers=3.0,username=${var.storage_account_name},password=${var.storage_account_key},dir_mode=0777,file_mode=0777,serverino"
+
+# Add to fstab if mount successful
+if [ $? -eq 0 ]; then
+    echo "File share mounted successfully"
+    
+    # Check if entry already exists in fstab
+    if ! grep -q "${var.storage_account_name}.file.core.windows.net" /etc/fstab; then
+        echo "//${var.storage_account_name}.file.core.windows.net/${var.fileshare_name} /mnt/fileshare cifs vers=3.0,username=${var.storage_account_name},password=${var.storage_account_key},dir_mode=0777,file_mode=0777,serverino 0 0" | sudo tee -a /etc/fstab
+    fi
+    
+    # Create test file
+    echo "Test file from ${var.name}" | sudo tee "/mnt/fileshare/test_${var.name}.txt"
+else
+    echo "Failed to mount file share"
+    exit 1
+fi
+EOF
+    )
   })
 }
 

@@ -1,6 +1,6 @@
 variable "vm_id" {
-  description = "The ID of the VM to attach the extension to."
-  type        = list(string)
+  description = "Map of Windows VM names to their IDs"
+  type        = map(string)
 }
 
 variable "script_url" {

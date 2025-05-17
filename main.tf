@@ -29,6 +29,72 @@ module "subnet" {
   address_prefixes    = each.value.address_prefixes
 }
 
+module "nsg" {
+  source = "./modules/nsg"
+  for_each = {
+    "windows-nsg" = {
+      subnet_key = "PLB_sub"
+      rules = [
+        {
+          name                        = "allow-rdp"
+          priority                    = 100
+          direction                   = "Inbound"
+          access                      = "Allow"
+          protocol                    = "Tcp"
+          source_port_range          = "*"
+          destination_port_range     = "3389"
+          source_address_prefix      = "*"
+          destination_address_prefix = "*"
+        },
+        {
+          name                        = "allow-http"
+          priority                    = 110
+          direction                   = "Inbound"
+          access                      = "Allow"
+          protocol                    = "Tcp"
+          source_port_range          = "*"
+          destination_port_range     = "80"
+          source_address_prefix      = "*"
+          destination_address_prefix = "*"
+        }
+      ]
+    },
+    "linux-nsg" = {
+      subnet_key = "ILB_sub"
+      rules = [
+        {
+          name                        = "allow-ssh"
+          priority                    = 100
+          direction                   = "Inbound"
+          access                      = "Allow"
+          protocol                    = "Tcp"
+          source_port_range          = "*"
+          destination_port_range     = "22"
+          source_address_prefix      = "*"
+          destination_address_prefix = "*"
+        },
+        {
+          name                        = "allow-http"
+          priority                    = 110
+          direction                   = "Inbound"
+          access                      = "Allow"
+          protocol                    = "Tcp"
+          source_port_range          = "*"
+          destination_port_range     = "80"
+          source_address_prefix      = "VirtualNetwork"
+          destination_address_prefix = "*"
+        }
+      ]
+    }
+  }
+
+  name                = each.key
+  location            = var.location
+  resource_group_name = module.rg.name
+  subnet_id           = module.subnet[each.value.subnet_key].subnet_id
+  security_rules      = each.value.rules
+}
+
 module "vnet_peerings" {
   source = "./modules/vnet_peering"
   for_each = {
@@ -168,15 +234,6 @@ module "sql_database" {
   admin_username      = var.admin_username
   admin_password      = var.admin_password
   depends_on          = [module.rg, module.vnet, module.subnet]
-}
-
-module "fileshare_mount" {
-  source                = "./modules/fileshare_mount"
-  vm_id                 = flatten([for vm in module.vms : vm.vm_ids])
-  script_url            = "https://raw.githubusercontent.com/mohamedtarek12345/Azure-Terraform-Scenario/main/modules/fileshar_mount/scripts/install-fileshare.sh"
-  storage_account_name  = module.storage.storage_account_name
-  storage_account_key   = module.storage.primary_access_key
-  name                  = "appfiles"
 }
 
 

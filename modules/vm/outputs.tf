@@ -10,12 +10,14 @@ output "public_ip" {
   value = length(azurerm_public_ip.pip) > 0 ? azurerm_public_ip.pip[0].ip_address : null
 }
 
-output "vm_ids" {
-  description = "All VM IDs"
-  value       = concat(
-    [for vm in azurerm_windows_virtual_machine.win : vm.id],
-    [for vm in azurerm_linux_virtual_machine.linux : vm.id]
-  )
+output "windows_vm_id" {
+  description = "Windows VM ID"
+  value       = var.os_type == "Windows" ? azurerm_windows_virtual_machine.win[0].id : null
+}
+
+output "linux_vm_id" {
+  description = "Linux VM ID"
+  value       = var.os_type == "Linux" ? azurerm_linux_virtual_machine.linux[0].id : null
 }
 
 output "storage_account_key" {
